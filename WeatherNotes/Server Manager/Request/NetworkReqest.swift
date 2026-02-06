@@ -11,5 +11,5 @@ protocol NetworkReqest {
     associatedtype Request: Encodable
     
     var method: String { get }
-    var parameters: Request { get }
+    var parameters: Request? { get }
 }

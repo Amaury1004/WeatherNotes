@@ -8,6 +8,7 @@
 import Foundation
 
 struct WeatherNotesRequest {
+    
     struct WeatherRequest: Encodable {
         
         let  request: Request
@@ -16,25 +17,22 @@ struct WeatherNotesRequest {
             
             let lat: Double
             let lon: Double
-            
-            let language: String = "ukr"
+            let lang: String = "ua"
             let units: String = "metric"
-            
-            let page: Int
         }
     }
     
     struct GetWeather: NetworkReqest {
         
-        typealias Response = WeatherNotesResponce.Weather
+        typealias Response = WeatherNotesResponce.WeatherResponce
         typealias Request = WeatherNotesRequest.WeatherRequest.Request
         
         var method: String
-        var parameters: WeatherNotesRequest.WeatherRequest.Request
+        var parameters: WeatherNotesRequest.WeatherRequest.Request?
         
-        init(method: String, parameters: WeatherNotesRequest.WeatherRequest.Request) {
-            self.method = method
-            self.parameters = WeatherRequest.Request.init(lat: 0, lon: 0, page: 1)
+        init(lat: Double, lon: Double) {
+            self.method = "weather/"
+            self.parameters = WeatherRequest.Request(lat: lat, lon: lon)
         }
     }
 }

@@ -5,43 +5,68 @@
 //  Created by Maks on 06.02.26.
 //
 
-
 import SwiftUI
 
-// Модель события
 struct Event: Identifiable, Codable {
     var id = UUID()
     var title: String
+    var iconURLString: String?
     var weather: String
     var data: Date = Date()
 }
+
+import SwiftUI
+
 struct NotesListView: View {
     
-    // Моковые данные
-    @State private var events: [Event] = UserDefaults.standard.loadEvents().isEmpty ? [
-        Event(title: "Прогулянка в парку", weather: "Сонячно"),
-        Event(title: "Зустріч з друзями", weather: "Хмарно"),
-        Event(title: "Уроки по SwiftUI", weather: "Дощ")
-    ] : UserDefaults.standard.loadEvents()
+    @State private var events: [Event] = UserDefaults.standard.loadEvents()
+    @State private var showingAddNote = false
     
     var body: some View {
         NavigationView {
             VStack {
-                List(events) { event in
-                    VStack(alignment: .leading) {
-                        Text(event.title)
-                            .font(.headline)
-                        Text(event.weather)
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
+                List {
+                    ForEach($events, id: \.id) { $event in
+                        HStack(alignment: .center, spacing: 10) {
+                            // Иконка
+                            if let url = event.iconURL {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 50, height: 50)
+                                } placeholder: {
+                                    ProgressView()
+                                        .frame(width: 50, height: 50)
+                                }
+                            } else {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 50, height: 50)
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(event.title)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                Text(event.weather)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                                Text(event.data, style: .date)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(6)
+                        .cornerRadius(8)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            handleTap(event: $event)
+                        }
                     }
-                    .padding(.vertical, 4)
                 }
                 
                 Button(action: {
-                    let new = Event(title: "Нова нотатка", weather: "Без опадів")
-                    events.append(new)
-                    UserDefaults.standard.saveEvents(events)
+                    showingAddNote = true
                 }) {
                     Text("Add Note")
                         .frame(maxWidth: .infinity)
@@ -49,14 +74,20 @@ struct NotesListView: View {
                         .background(Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
-                        .padding()
+                        .padding(.horizontal)
+                }
+                .sheet(isPresented: $showingAddNote) {
+                    AddNoteView(events: $events)
                 }
             }
-            .onDisappear { UserDefaults.standard.saveEvents(events) }
             .navigationTitle("Notes")
         }
     }
+    func handleTap(event: Binding<Event>) {
+        print("Tapped on: \(event.title)")
+    }
 }
+
 extension UserDefaults {
     
     private static let eventsKey = "events"
@@ -76,3 +107,9 @@ extension UserDefaults {
     }
 }
 
+extension Event {
+    var iconURL: URL? {
+        guard let str = iconURLString else { return nil }
+        return URL(string: str)
+    }
+}

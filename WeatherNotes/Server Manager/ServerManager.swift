@@ -29,15 +29,19 @@ final class ServerManager {
             return
         }
         var queryItems = [URLQueryItem(name: "appid", value: apiKey)]
-        if let params = request.parameters as? [String: Any] {
-            for (key, value) in params {
-                queryItems.append(URLQueryItem(name: key, value: String(describing: value)))
-            }
-        } else if let params = request.parameters as? [String: CustomStringConvertible] {
-            for (key, value) in params {
-                queryItems.append(URLQueryItem(name: key, value: value.description))
-            }
-        }
+        if let dict = request.parameters as? [String: Any] {
+                    for (key, value) in dict {
+                        queryItems.append(URLQueryItem(name: key, value: String(describing: value)))
+                    }
+                } else if let encodable = request.parameters as? Encodable {
+                    if let data = try? JSONEncoder().encode(AnyEncodable(encodable)),
+                       let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        for (key, value) in json {
+                            queryItems.append(URLQueryItem(name: key, value: String(describing: value)))
+                        }
+                    }
+                }
+        print(request.parameters ?? "xyz")
         urlComponents.queryItems = queryItems
         
         guard let url = urlComponents.url else {
@@ -60,7 +64,8 @@ final class ServerManager {
                 completion(.failure(URLError(.badServerResponse)))
                 return
             }
-            
+            print("Full URL: \(urlComponents.url?.absoluteString ?? "nil")")
+
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = dateDecodingStrategy
             decoder.keyDecodingStrategy = keyDecodingStrategy
@@ -70,6 +75,7 @@ final class ServerManager {
                 completion(.success(decoded))
             } catch {
                 completion(.failure(error))
+                
             }
         }
         task.resume()
@@ -79,3 +85,14 @@ final class ServerManager {
     
 
 
+struct AnyEncodable: Encodable {
+    private let encodeClosure: (Encoder) throws -> Void
+
+    init(_ encodable: Encodable) {
+        self.encodeClosure = encodable.encode
+    }
+
+    func encode(to encoder: Encoder) throws {
+        try encodeClosure(encoder)
+    }
+}
