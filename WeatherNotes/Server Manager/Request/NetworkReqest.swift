@@ -4,6 +4,7 @@
 //
 //  Created by Maks on 06.02.26.
 //
+import Foundation
 
 protocol NetworkReqest {
     associatedtype Response: Decodable
